@@ -1,55 +1,55 @@
 import React, { useState } from 'react'
 import api from '../api'
 
-export default function LoginPage({ onLogin }) {
+export default function AuthPage({ onLogin }) {
+  const [mode, setMode] = useState('login')
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
 
-  const handleLogin = async () => {
-    if (!username || !password) {
-      setError("Please enter both username and password")
+  const handleSubmit = async () => {
+    if (!username || !password || (mode === 'register' && !confirmPassword)) {
+      setError("Please fill all fields")
+      return
+    }
+
+    if (mode === 'register' && password !== confirmPassword) {
+      setError("Passwords do not match")
       return
     }
 
     setLoading(true)
     setError("")
+    setSuccess("")
 
     try {
-      console.log("Attempting login with:", { username, password })
-      const res = await api.post("/auth/login", { username, password })
-      console.log("Login response:", res.data)
-      
-      if (res.data.token) {
-        localStorage.setItem("token", res.data.token)
-        onLogin()
+      if (mode === 'login') {
+        const res = await api.post("/auth/login", { username, password })
+        if (res.data.token) {
+          localStorage.setItem("token", res.data.token)
+          onLogin()
+        } else {
+          setError("No token received from server")
+        }
       } else {
-        setError("No token received from server")
+        const res = await api.post("/auth/register", { username, password })
+        setSuccess("Registration successful! You can now login.")
+        setMode('login')
+        setUsername("")
+        setPassword("")
+        setConfirmPassword("")
       }
     } catch (err) {
-      console.error("Login error:", err)
-      
       if (err.response) {
-        // Server responded with error status
-        const status = err.response.status
-        const message = err.response.data?.message || err.response.data?.error || "Login failed"
-        
-        if (status === 401) {
-          setError("Invalid username or password")
-        } else if (status === 404) {
-          setError("Login endpoint not found. Please check if the backend server is running.")
-        } else if (status >= 500) {
-          setError("Server error. Please try again later.")
-        } else {
-          setError(`Login failed: ${message}`)
-        }
+        const message = err.response.data?.message || err.response.data?.error || `${mode} failed`
+        setError(message)
       } else if (err.request) {
-        // Network error - no response received
-        setError("Cannot connect to server. Please check if the backend is running on http://localhost:4000")
+        setError("Cannot connect to server. Please check if the backend is running.")
       } else {
-        // Other error
-        setError("Login failed: " + err.message)
+        setError(`${mode} failed: ` + err.message)
       }
     } finally {
       setLoading(false)
@@ -58,91 +58,160 @@ export default function LoginPage({ onLogin }) {
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
-      handleLogin()
+      handleSubmit()
     }
   }
 
+  const inputStyle = {
+    marginBottom: '16px',
+    padding: '12px',
+    border: '1px solid #d1c4e9',
+    borderRadius: '8px',
+    fontSize: '15px',
+    background: '#fff',
+    transition: 'border 0.2s ease',
+    outline: 'none'
+  }
+
   return (
-    <div style={{ 
-      maxWidth: '400px', 
-      margin: '50px auto', 
-      padding: '20px',
-      border: '1px solid #ccc',
-      borderRadius: '8px',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+    <div style={{
+      background: 'linear-gradient(to bottom right, #fbeaff, #f0e7f6)',
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px'
     }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Login</h2>
-      
-      {error && (
-        <div style={{ 
-          color: 'red', 
-          backgroundColor: '#ffe6e6', 
-          padding: '10px', 
-          borderRadius: '4px', 
-          marginBottom: '15px',
-          fontSize: '14px'
+      <div style={{
+        width: '100%',
+        maxWidth: '400px',
+        padding: '30px',
+        borderRadius: '15px',
+        background: 'rgba(255, 255, 255, 0.75)',
+        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        fontFamily: 'Segoe UI, sans-serif'
+      }}>
+        <h2 style={{
+          textAlign: 'center',
+          marginBottom: '24px',
+          color: '#5c007a'
         }}>
-          {error}
-        </div>
-      )}
-      
-      <div style={{ marginBottom: '15px' }}>
-        <input 
-          placeholder="Username" 
+          {mode === 'login' ? '🔐 Welcome' : '📝 Register'}
+        </h2>
+
+        {error && (
+          <div style={{
+            color: '#8b0000',
+            backgroundColor: '#fdecea',
+            border: '1px solid #f3bcbc',
+            padding: '12px',
+            borderRadius: '8px',
+            marginBottom: '16px',
+            fontSize: '14px',
+            textAlign: 'center'
+          }}>
+            {error}
+          </div>
+        )}
+
+        {success && (
+          <div style={{
+            color: 'green',
+            backgroundColor: '#e6ffe6',
+            padding: '12px',
+            borderRadius: '8px',
+            marginBottom: '16px',
+            fontSize: '14px',
+            textAlign: 'center'
+          }}>
+            {success}
+          </div>
+        )}
+
+        <input
+          placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           onKeyPress={handleKeyPress}
-          style={{ 
-            width: '100%', 
-            padding: '10px', 
-            border: '1px solid #ddd', 
-            borderRadius: '4px',
-            fontSize: '16px'
-          }}
+          style={inputStyle}
         />
-      </div>
-      
-      <div style={{ marginBottom: '20px' }}>
-        <input 
-          placeholder="Password" 
-          type="password" 
+
+        <input
+          placeholder="Password"
+          type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           onKeyPress={handleKeyPress}
-          style={{ 
-            width: '100%', 
-            padding: '10px', 
-            border: '1px solid #ddd', 
-            borderRadius: '4px',
-            fontSize: '16px'
-          }}
+          style={inputStyle}
         />
-      </div>
-      
-      <button 
-        onClick={handleLogin} 
-        disabled={loading}
-        style={{ 
-          width: '100%', 
-          padding: '12px', 
-          backgroundColor: loading ? '#ccc' : '#007bff', 
-          color: 'white', 
-          border: 'none', 
-          borderRadius: '4px',
-          fontSize: '16px',
-          cursor: loading ? 'not-allowed' : 'pointer'
-        }}
-      >
-        {loading ? 'Logging in...' : 'Login'}
-      </button>
-      
-      <div style={{ 
-        marginTop: '15px', 
-        fontSize: '12px', 
-        color: '#666', 
-        textAlign: 'center' 
-      }}>
-        Backend URL: http://localhost:4000/api
+
+        {mode === 'register' && (
+          <input
+            placeholder="Confirm Password"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            onKeyPress={handleKeyPress}
+            style={inputStyle}
+          />
+        )}
+
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          style={{
+            width: '100%',
+            padding: '12px',
+            backgroundColor: loading ? '#b39ddb' : '#7e57c2',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '16px',
+            fontWeight: '600',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            transition: 'transform 0.2s ease'
+          }}
+          onMouseEnter={(e) => e.target.style.transform = 'scale(1.02)'}
+          onMouseLeave={(e) => e.target.style.transform = 'scale(1.0)'}
+        >
+          {loading ? (mode === 'login' ? 'Logging in...' : 'Registering...') : (mode === 'login' ? 'Login' : 'Register')}
+        </button>
+
+        <button
+          onClick={() => {
+            setMode(mode === 'login' ? 'register' : 'login')
+            setError("")
+            setSuccess("")
+          }}
+          style={{
+            marginTop: '12px',
+            width: '100%',
+            padding: '12px',
+            backgroundColor: '#ec407a',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '15px',
+            fontWeight: '500',
+            cursor: 'pointer',
+            transition: 'transform 0.2s ease'
+          }}
+          onMouseEnter={(e) => e.target.style.transform = 'scale(1.02)'}
+          onMouseLeave={(e) => e.target.style.transform = 'scale(1.0)'}
+        >
+          {mode === 'login' ? 'Create Account' : 'Back to Login'}
+        </button>
+
+        <div style={{
+          marginTop: '22px',
+          fontSize: '13px',
+          color: '#555',
+          textAlign: 'center'
+        }}>
+          🌐 Backend URL: <span style={{ color: '#5e35b1', fontWeight: 'bold' }}>http://localhost:4000/api</span>
+        </div>
       </div>
     </div>
   )
