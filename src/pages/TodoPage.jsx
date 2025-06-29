@@ -14,7 +14,6 @@ export default function TodoPage() {
   const submit = async () => {
     if (!form.title || !form.description || !form.Date) return
 
-    // Fix: Ensure clean date formatting before sending to backend
     const formattedDate = dayjs(form.Date).format("YYYY-MM-DD")
     await api.post("/todos", { ...form, Date: formattedDate })
 
@@ -37,23 +36,12 @@ export default function TodoPage() {
   }, [])
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      background: '#fefaff',
-      padding: '24px'
-    }}>
+    <div style={pageStyle}>
       {/* Top: Form & Todo List */}
       <div style={{ flex: 1 }}>
         <h2 style={{ color: '#5c007a', marginBottom: '20px' }}>📝 My Todos</h2>
 
-        <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '10px',
-          marginBottom: '20px'
-        }}>
+        <div style={formRowStyle}>
           <input
             type="text"
             placeholder="Title"
@@ -69,7 +57,7 @@ export default function TodoPage() {
             style={inputStyle}
           />
           <input
-            type="Due date"
+            type="date"
             value={form.Date}
             onChange={(e) => setForm({ ...form, Date: e.target.value })}
             style={inputStyle}
@@ -92,25 +80,24 @@ export default function TodoPage() {
       </div>
 
       {/* Bottom: Logout */}
-      <button
-        onClick={logout}
-        style={{
-          padding: '12px 20px',
-          backgroundColor: '#d32f2f',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          fontSize: '16px',
-          fontWeight: '500',
-          cursor: 'pointer',
-          alignSelf: 'center',
-          marginTop: '20px'
-        }}
-      >
-        Logout
-      </button>
+      <button onClick={logout} style={logoutButtonStyle}>Logout</button>
     </div>
   )
+}
+
+const pageStyle = {
+  minHeight: '100vh',
+  display: 'flex',
+  flexDirection: 'column',
+  background: '#fefaff',
+  padding: '24px'
+}
+
+const formRowStyle = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '10px',
+  marginBottom: '20px'
 }
 
 const inputStyle = {
@@ -140,6 +127,19 @@ const deleteButtonStyle = {
   cursor: 'pointer',
   alignSelf: 'center',
   marginTop: '8px'
+}
+
+const logoutButtonStyle = {
+  padding: '12px 20px',
+  backgroundColor: '#d32f2f',
+  color: 'white',
+  border: 'none',
+  borderRadius: '8px',
+  fontSize: '16px',
+  fontWeight: '500',
+  cursor: 'pointer',
+  alignSelf: 'center',
+  marginTop: '20px'
 }
 
 const todoItemStyle = {
